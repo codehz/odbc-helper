@@ -1,8 +1,3 @@
-# ODBC HELPER(WIP)
-
-A simple helper for odbc.
-
-```
 const helper = require("./index");
 console.log('start');
 
@@ -61,4 +56,3 @@ helper('DRIVER=SQLite3;Database=./test.db;').then(async function (db) {
         await new db.$test.delete()();
     })
     .catch(err => console.error('err', err));
-```
