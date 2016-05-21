@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/codehz/odbc-helper/issues"
   },
-  "homepage": "https://github.com/codehz/odbc-helper#readme"
+  "homepage": "https://github.com/codehz/odbc-helper#readme",
+  "dependencies": {
+    "odbc": "^1.2.1"
+  }
 }
