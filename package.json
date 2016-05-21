@@ -1,0 +1,22 @@
+{
+  "name": "odbc-helper",
+  "version": "0.0.1",
+  "description": "ODBC-helper like sqlite-helper",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codehz/odbc-helper.git"
+  },
+  "keywords": [
+    "odbc"
+  ],
+  "author": "CodeHz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/codehz/odbc-helper/issues"
+  },
+  "homepage": "https://github.com/codehz/odbc-helper#readme"
+}
