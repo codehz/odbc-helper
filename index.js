@@ -185,27 +185,36 @@ const others = {
     }),
     trigger: db => new Proxy(db, {
         get: (clazz, trigger_name) => checkProperty(trigger_name) ? genConstruct(() => {
+            const eventLogic = (obj, self) => ((event, updateOf) => ((obj.event = event), (event === 'UPDATE' && (obj.updateOf = updateOf)), self));
             const self = new Proxy(fakeFunction({
                 after: true,
+                insteadOf: false,
+                updateOf: [],
                 event: '',
+                when: '',
                 on: '',
                 ops: [],
                 maps: []
             }), {
-                get: (obj, property) => property === 'before' ?
-                    ((obj.after = false), event => ((obj.event = event), self)) : property === 'after' ?
-                    ((obj.after = true), event => ((obj.event = event), self)) : property === 'on' ?
-                    (on => ((obj.on = on), self)) : property === 'do' ?
-                    ((op, args) => (obj.ops.push((args ? directMapParams(args, op.raw) : op.raw) + ';'), self)) : property === 'raw' ? [
+                get: (obj, property) =>
+                    property === 'before' ?
+                    ((obj.after = false), eventLogic(obj, self)) : property === 'after' ?
+                    ((obj.after = true), eventLogic(obj, self)) : property === 'insteadOf' ?
+                    ((obj.insteadOf = true), eventLogic(obj, self)) : property === 'on' ?
+                    (on => ((obj.on = on), self)) : property === 'when' ?
+                    (when => ((obj.when = when), self)) : property === 'do' ?
+                    ((op, args) => (obj.ops.push(args ? directMapParams(args, op.raw) : op.raw), self)) : property === 'raw' ? [
                         'CREATE TRIGGER IF NOT EXISTS',
                         trigger_name.substr(1),
-                        obj.after ? 'AFTER' : 'BEFORE',
+                        obj.insteadOf ? 'INSTEAD OF' : obj.after ? 'AFTER' : 'BEFORE',
                         obj.event,
+                        ...(obj.event === 'UPDATE' ? ['OF', obj.updateOf.join(', ')] : []),
                         'ON',
                         obj.on,
                         'FOR EACH ROW BEGIN',
-                        ...obj.ops,
-                        'END'
+                        ...(obj.when ? ['WHEN', obj.when] : []),
+                        obj.ops.join(';'),
+                        ';END'
                     ].join(' ') : obj[property],
                 apply: (target, ctx, [value = {}]) => (stmt =>
                         callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
