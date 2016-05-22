@@ -17,13 +17,17 @@ const DBMethods = (db, table) => ({
         const PRIMARY = keys => keys ? `PRIMARY KEY(${keys.join(', ')})` : '';
         const generator = target => target.map(item => [item.name, item.type]
                 .concat(item.unique ? 'UNIQUE' : [])
-                .concat(item.notnull ? ['NOT', 'NULL'] : [])
-                .concat(item.default ? ['DEFAULT', item.default] : [])
+                .concat(item.notnull ? 'NOT NULL' : [])
+                .concat(item.default ? `DEFAULT ${item.default}` : [])
                 .join(' '))
             .concat(PRIMARY(target.filter(item => item.conf.primary).map(item => item.name)))
-            .concat(target.filter(item => item.conf.foreign).map(item => item.conf.foreign)
+            .concat(target.filter(item => item.conf.foreign)
                 .map(({
-                    src, des, foreign
+                    name: src,
+                    conf: {
+                        foreign,
+                        des
+                    }
                 }) => `FOREIGN KEY(${src}) REFERENCES ${foreign}(${des}) ON DELETE CASCADE`))
             .join(', ');
         const self = new Proxy(mixFunction({
