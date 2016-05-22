@@ -75,7 +75,7 @@ const DBMethods = (db, table) => ({
         }), {
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property.substr(1)), self) : property === 'raw' ? [
-                    target.replace ? 'REPLACE INTO' : target.ignore ?  'INSERT IGNORE INTO' :'INSERT INTO',
+                    target.replace ? 'REPLACE INTO' : target.ignore ? 'INSERT IGNORE INTO' : 'INSERT INTO',
                     table,
                     `(${target.keys.join(', ')})`,
                     'VALUES',
@@ -122,8 +122,7 @@ const DBMethods = (db, table) => ({
                         by, asc
                     }) => `${by} ${asc}`).join(', ')] : []),
                     ...(target.limit.offset ? ['LIMIT', `${target.limit.offset}, ${target.limit.rows}`] : [])
-                ]
-                .join(' ') : target[property],
+                ].join(' ') : target[property],
             apply: (target, ctx, [value = {}]) => (stmt =>
                     resultHelper(callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value))))
                 (target.stmt || (target.stmt = db.prepareSync(log('create', mapParams(target.maps, self.raw))))),
@@ -140,9 +139,12 @@ const DBMethods = (db, table) => ({
         }), {
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property.substr(1)), self) : property === 'where' ?
-                cond => (target.wheres.push(cond), self) : property === 'raw' ? [`UPDATE ${table} SET ${generator(target.keys, target.maps)}`]
-                .concat(target.wheres.length > 0 ? `WHERE ` + target.wheres.join(' AND ') : [])
-                .join(' ') : target[property],
+                cond => (target.wheres.push(cond), self) : property === 'raw' ? [
+                    'UPDATE',
+                    table,
+                    generator(target.keys, target.maps),
+                    ...(target.wheres.length > 0 ? ['WHERE', target.wheres.join(' AND ')] : [])
+                ].join(' ') : target[property],
             apply: (target, ctx, [value = {}]) => (stmt =>
                     callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
                 (target.stmt || (target.stmt = db.prepareSync(log('create', mapParams(target.maps, self.raw))))),
@@ -156,9 +158,11 @@ const DBMethods = (db, table) => ({
             maps: [],
         }), {
             get: (target, property) => property === 'where' ?
-                cond => (target.wheres.push(cond), self) : property === 'raw' ? [`DELETE FROM ${table}`]
-                .concat(target.wheres.length > 0 ? `WHERE ${target.wheres.join(' AND ')}` : [])
-                .join(' ') : target[property],
+                cond => (target.wheres.push(cond), self) : property === 'raw' ? [
+                    'DELETE FROM',
+                    table,
+                    ...(target.wheres.length > 0 ? ['WHERE', target.wheres.join(' AND ')] : [])
+                ].join(' ') : target[property],
             apply: (target, ctx, [value = {}]) => (stmt =>
                     callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
                 (target.stmt || (target.stmt = db.prepareSync(log('create', mapParams(target.maps, self.raw))))),
