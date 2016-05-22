@@ -68,16 +68,23 @@ const DBMethods = (db, table) => ({
         const self = new Proxy(fakeFunction({
             keys: [],
             maps: [],
-            stmt: null
+            stmt: null,
+            replace: false,
+            deplicateUpdate: false,
+            ignore: false
         }), {
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property.substr(1)), self) : property === 'raw' ? [
-                    'INSERT INTO',
+                    target.replace ? 'REPLACE INTO' : target.ignore ?  'INSERT IGNORE INTO' :'INSERT INTO',
                     table,
                     `(${target.keys.join(', ')})`,
                     'VALUES',
-                    `(${target.keys.map(key => '$' + key).join(', ')})`
-                ].join(' ') : target[property],
+                    `(${target.keys.map(key => '$' + key).join(', ')})`,
+                    ...(!target.replace && target.ignore && target.deplicateUpdate ? ['ON DEPLICATE UPDATE'] : [])
+                ].join(' ') : property === 'replace' ?
+                ((target.replace = true), self) : property === 'deplicateUpdate' ?
+                ((target.deplicateUpdate = true), self) : property === 'ignore' ?
+                ((target.ignore = true), self) : target[property],
             apply: (target, ctx, [value = {}]) => (stmt =>
                     callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
                 (target.stmt || (target.stmt = db.prepareSync(log('create', mapParams(target.maps, self.raw))))),
