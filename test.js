@@ -1,7 +1,9 @@
 const helper = require("./index");
 console.log('start');
 
-helper('DRIVER=SQLite3;Database=./test.db;').then(async function (db) {
+helper.debug = true;
+
+helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (db) {
         const createTable = new db.$test.create()
             .$id('INTEGER', {
                 primary: true,
@@ -53,6 +55,31 @@ helper('DRIVER=SQLite3;Database=./test.db;').then(async function (db) {
 
         console.log(await (await selectData()).data);
 
+        const anotherTable = new db.$another.create()
+            .$id('TEXT', {
+                primary: true,
+                unique: true,
+                foreign: {
+                    target: 'test',
+                    key: 'id'
+                }
+            })
+            .$info('TEXT', {
+                notnull: true
+            });
+        await anotherTable();
+
+        const insertAnotherData = new db.$another.insert().$id.$info;
+        await insertAnotherData({
+            $id: '3',
+            $info: 'INFO'
+        });
+
+        const selectAnotherData = new db.$another.select().$;
+        console.log(await (await selectAnotherData()).data);
+
         await new db.$test.delete()();
+
+        console.log(await (await selectAnotherData()).data);
     })
     .catch(err => console.error('err', err));

@@ -23,7 +23,7 @@ const DBMethods = (db, table) => ({
                 .join(' '))
             .concat(PRIMARY(target.filter(item => item.conf.primary).map(item => item.name)))
             .concat(target.filter(item => item.conf.foreign)
-                .forEach(({
+                .map(({
                     name: src,
                     conf: {
                         foreign: {
