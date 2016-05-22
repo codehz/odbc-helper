@@ -2,6 +2,82 @@
 
 A simple helper for odbc.
 
+## Basic Usage
+
+### Connect Database
+```
+const helper = require("odbc-helper");
+helper(process.env.CONNECT_STRING).then(db => {
+    //Gotted
+}).catch(err => console.error(err));
+```
+
+### Create Table
+```
+const stmt = new db.$test.create()
+    .$id('INTEGER', {primary: true, unique: true})
+    .$name('TINYTEXT', {primary: true})
+    .$info('TEXT');
+
+await stmt(); //Or stmt().then(...), it just a Promise Object.
+```
+
+### Insert Data
+```
+const stmt = new db.$test.insert().$name.$info;
+await stmt({
+    $name: 'name',
+    $info: 'info'
+})
+```
+
+### Query
+```
+//$ => *
+//$abc => abc
+const stmt = new db.$test.select().$name.$info.where('name == $name');
+
+const data = await (await stmt({$name: 'name'})).data;
+```
+
+### Update
+```
+const stmt = new db.$test.insert().$name.$info.where('name == $oldname');
+await stmt({
+    $oldname: 'name',
+    $name: 'newname',
+    $info: 'info2'
+})
+```
+
+### Delete Data
+```
+const stmt = new db.$test.select().where('name == $name');
+await stmt({$name: 'name'});
+```
+
+### Create Trigger
+```
+const stmt = new db._trigger.$logtrigger().on('test').after('INSERT')
+    .do(new db.$log.insert().$src.$info, {$src: 'test', $info: '"INSERT " || NEW.id'});
+await stmt();
+```
+
+### Create View
+```
+const stmt = new db._view.$logView().temp.as(new db.$log.select().$.where('src == "test"'));
+await stmt();
+```
+
+### Drop {Table, Trigger, View}
+```
+delete db.$test;
+delete db._trigger.$logtrigger;
+delete db._view.$logView;
+```
+
+##demo
+
 ```
 const helper = require("./index");
 log('start');
