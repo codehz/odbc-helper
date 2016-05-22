@@ -1,7 +1,12 @@
 const helper = require("./index");
-console.log('start');
+log('start');
 
 helper.debug = true;
+
+function log(...args) {
+    console.log('\u001B[1;32m');
+    console.log(...args, '\u001B[0m');
+}
 
 helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (db) {
         const logTable = new db.$log.create()
@@ -28,23 +33,21 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
             })
             .$info('TEXT');
 
-        console.log('create', typeof createTable);
         await logTable();
         await testTable();
-        console.log('create', 'after create');
 
+        log('create', 'trigger for test');
         const testLogTrigger = new db._trigger.$testlog()
             .after('INSERT').on('test').do(new db.$log.insert().$src.$content, {
                 $src: '"test"',
                 $content: '"insert " || NEW.id'
             });
-        console.log(testLogTrigger.do);
         await testLogTrigger();
 
         const selectLogData = new db.$log.select().$;
 
         const insertData = new db.$test.insert().$name.$info;
-        console.log('insert');
+        log('insert');
         await insertData({
             $name: 'TEST',
             $info: 'info'
@@ -61,33 +64,30 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
             $name: 'TEST3',
             $info: 'info2'
         });
-        console.log('insert', 'after insert');
 
-        console.log(await (await selectLogData()).data);
+        log(await (await selectLogData()).data);
 
         const selectData = new db.$test.select().$;
-        console.log(await (await selectData()).data);
-        console.log('select', 'after select');
+        log(await (await selectData()).data);
 
-        console.log('delete');
+        log('delete');
         const deleteCommand = new db.$test.delete().where('name = $name');
         await deleteCommand({
             $name: 'TEST'
         });
-        console.log('delete', 'after delete');
 
-        console.log(await (await selectData()).data);
+        log(await (await selectData()).data);
 
-        console.log('update');
+        log('update');
         const updateCommand = new db.$test.update().$info.where('name == $name');
         await updateCommand({
             $name: 'TEST2',
             $info: 'modify'
         });
-        console.log('update', 'after update');
 
-        console.log(await (await selectData()).data);
+        log(await (await selectData()).data);
 
+        log('create', 'anotherTable');
         const anotherTable = new db.$another.create()
             .$id('TEXT', {
                 primary: true,
@@ -102,20 +102,46 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
             });
         await anotherTable();
 
+        log('create', 'trigger for another');
+        await (new db._trigger.$anotherlog()
+            .on('another').after('INSERT').do(new db.$log.insert().$src.$content, {
+                $src: '"another"',
+                $content: '"insert " || NEW.id'
+            }))();
+
         const insertAnotherData = new db.$another.insert().$id.$info;
         await insertAnotherData({
             $id: '3',
             $info: 'INFO'
         });
+        await insertAnotherData({
+            $id: '4',
+            $info: 'INFO'
+        });
 
+        log('select', 'from another');
         const selectAnotherData = new db.$another.select().$;
-        console.log(await (await selectAnotherData()).data);
+        log(await (await selectAnotherData()).data);
 
         await new db.$test.delete()();
 
-        console.log(await (await selectAnotherData()).data);
+        log(await (await selectAnotherData()).data);
 
+        log(await (await selectLogData()).data);
+
+        log('create', 'view');
+        const logView = new db._view.$anotherlogview()
+            .as(new db.$log.select().$.where('src == "another"'));
+        await logView();
+
+        log('select', 'from view');
+        const selectFromView = new db.$anotherlogview.select().$;
+        log(await (await selectFromView()).data);
+
+        log('delete', 'all');
         delete db._trigger.$testlog;
+        delete db._trigger.$anotherlog;
+        delete db._view.$anotherlogview;
         delete db.$log;
         delete db.$test;
         delete db.$another;

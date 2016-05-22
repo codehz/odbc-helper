@@ -82,7 +82,7 @@ const DBMethods = (db, table) => ({
                     callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
                 (target.stmt || (target.stmt = db.prepareSync(log('create', mapParams(target.maps, self.raw))))),
         });
-        return log(self);
+        return self;
     }),
     select: genConstruct(() => {
         const resultHelper = prm => new Promise((resolve, reject) => prm.then(src => resolve(new Proxy(src, {
@@ -204,6 +204,33 @@ const others = {
         }) : clazz[trigger_name],
         deleteProperty: (target, property) => checkProperty(property) ?
             (others.raw(db)(`DROP TRIGGER IF EXISTS ${property.substr(1)}`)(), true) : false
+    }),
+    view: db => new Proxy(db, {
+        get: (clazz, view_name) => checkProperty(view_name) ? genConstruct(() => {
+            const self = new Proxy(fakeFunction({
+                as: '',
+                temp: false,
+                maps: []
+            }), {
+                get: (obj, property) => property === 'temp' ?
+                    (obj.temp = true, self) : property === 'as' ?
+                    ((op, args) =>
+                        ((obj.as = args ? directMapParams(args, op.raw) : op.raw), self)) : property === 'raw' ? [
+                        'CREATE',
+                        ...(obj.temp ? ['TEMP'] : []),
+                        'VIEW IF NOT EXISTS',
+                        view_name.substr(1),
+                        'AS',
+                        obj.as
+                    ].join(' ') : obj[property],
+                apply: (target, ctx, [value = {}]) => (stmt =>
+                        callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
+                    (target.stmt || (target.stmt = db.prepareSync(log('create', mapParams(target.maps, self.raw))))),
+            });
+            return self;
+        }) : clazz[view_name],
+        deleteProperty: (target, property) => checkProperty(property) ?
+            (others.raw(db)(`DROP VIEW IF EXISTS ${property.substr(1)}`)(), true) : false
     })
 };
 
