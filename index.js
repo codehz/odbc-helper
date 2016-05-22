@@ -1,7 +1,8 @@
 const ODBC = require('odbc');
 
 const checkProperty = property => typeof property === 'string' && property.startsWith('$');
-const callback2promise = (func, ...args) => new Promise((resolve, reject) => func(...args, (err, ret) => err ? reject(err) : resolve(ret)));
+const callback2promise = (func, ...args) =>
+    new Promise((resolve, reject) => func(...args, (err, ret) => err ? reject(err) : resolve(ret)));
 const genConstruct = construct => new Proxy(function () {}, {
     construct
 });
@@ -22,13 +23,15 @@ const DBMethods = (db, table) => ({
                 .join(' '))
             .concat(PRIMARY(target.filter(item => item.conf.primary).map(item => item.name)))
             .concat(target.filter(item => item.conf.foreign)
-                .map(({
+                .forEach(({
                     name: src,
                     conf: {
-                        foreign,
-                        des
+                        foreign: {
+                            target,
+                            key = src
+                        }
                     }
-                }) => `FOREIGN KEY(${src}) REFERENCES ${foreign}(${des}) ON DELETE CASCADE`))
+                }) => `FOREIGN KEY(${src}) REFERENCES ${target}(${key}) ON DELETE CASCADE`))
             .join(', ');
         const self = new Proxy(mixFunction({
             content: []
@@ -51,8 +54,10 @@ const DBMethods = (db, table) => ({
             maps: [],
             stmt: null
         }), {
-            get: (target, property) => checkProperty(property) ? (target.keys.push(property.substr(1)), self) : target[property],
-            apply: (target, ctx, [value = {}]) => (stmt => callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
+            get: (target, property) => checkProperty(property) ?
+                (target.keys.push(property.substr(1)), self) : target[property],
+            apply: (target, ctx, [value = {}]) => (stmt =>
+                    callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
                 (target.stmt || (target.stmt = db.prepareSync(log(mapParams(target.maps,
                     `INSERT INTO ${table} (${target.keys.join(', ')}) VALUES (${target.keys.map(key => '$' + key).join(', ')})`))))),
         });
@@ -61,7 +66,8 @@ const DBMethods = (db, table) => ({
     select: genConstruct(() => {
         const resultHelper = prm => new Promise((resolve, reject) => prm.then(src => resolve(new Proxy(src, {
             get: (target, property) => property === 'data' ? new Promise((rv, rj) =>
-                target.data ? rv(target.data) : target.fetchAll((err, data) => (target.closeSync(), err ? rj(err) : rv(data)))) : target[property]
+                target.data ? rv(target.data) :
+                target.fetchAll((err, data) => (target.closeSync(), err ? rj(err) : rv(data)))) : target[property]
         }))).catch(reject));
         const self = new Proxy(mixFunction({
             stmt: null,
@@ -76,17 +82,20 @@ const DBMethods = (db, table) => ({
                 (offset, rows) => (target.limit = {
                     offset, rows
                 }, self) : property === 'where' ?
-                cond => (target.wheres.push(cond), self) : property === 'order' ? (by, asc = 'asc') => (target.orders.push({
+                cond => (target.wheres.push(cond), self) : property === 'order' ?
+                (by, asc = 'asc') => (target.orders.push({
                     by, asc
                 }), self) : target[property],
-            apply: (target, ctx, [value = {}]) => (stmt => resultHelper(callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value))))
-                (target.stmt || (target.stmt = db.prepareSync(log(mapParams(target.maps, [`SELECT ${target.keys.join(', ')} FROM ${table}`]
-                    .concat(target.wheres.length > 0 ? `WHERE ` + this.wheres.join(' AND ') : [])
-                    .concat(target.orders.length > 0 ? `ORDER BY ` + this.orders.map(({
-                        by, asc
-                    }) => `${by} ${asc}`).join(', ') : [])
-                    .concat(target.limit.offset ? `LIMIT ${target.limit.offset}, ${target.limit.rows}` : [])
-                    .join(' '))))))
+            apply: (target, ctx, [value = {}]) => (stmt =>
+                    resultHelper(callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value))))
+                (target.stmt || (target.stmt =
+                    db.prepareSync(log(mapParams(target.maps, [`SELECT ${target.keys.join(', ')} FROM ${table}`]
+                        .concat(target.wheres.length > 0 ? `WHERE ` + target.wheres.join(' AND ') : [])
+                        .concat(target.orders.length > 0 ? `ORDER BY ` + target.orders.map(({
+                            by, asc
+                        }) => `${by} ${asc}`).join(', ') : [])
+                        .concat(target.limit.offset ? `LIMIT ${target.limit.offset}, ${target.limit.rows}` : [])
+                        .join(' '))))))
         });
         return self;
     }),
@@ -101,10 +110,13 @@ const DBMethods = (db, table) => ({
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property.substr(1)), self) : property === 'where' ?
                 cond => (target.wheres.push(cond), self) : target[property],
-            apply: (target, ctx, [value = {}]) => (stmt => callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
-                (target.stmt || (target.stmt = db.prepareSync(log(mapParams(target.maps, [`UPDATE ${table} SET ${generator(target.keys, target.maps)}`]
-                    .concat(target.wheres.length > 0 ? `WHERE ` + target.wheres.join(' AND ') : [])
-                    .join(' ')))))),
+            apply: (target, ctx, [value = {}]) => (stmt =>
+                    callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
+                (target.stmt || (target.stmt =
+                    db.prepareSync(log(mapParams(
+                        target.maps, [`UPDATE ${table} SET ${generator(target.keys, target.maps)}`]
+                        .concat(target.wheres.length > 0 ? `WHERE ` + target.wheres.join(' AND ') : [])
+                        .join(' ')))))),
         });
         return self;
     }),
@@ -114,8 +126,10 @@ const DBMethods = (db, table) => ({
             wheres: [],
             maps: [],
         }), {
-            get: (target, property) => property === 'where' ? cond => (target.wheres.push(cond), self) : target[property],
-            apply: (target, ctx, [value = {}]) => (stmt => callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
+            get: (target, property) => property === 'where' ?
+                cond => (target.wheres.push(cond), self) : target[property],
+            apply: (target, ctx, [value = {}]) => (stmt =>
+                    callback2promise(stmt.execute.bind(stmt), unmapParams(target.maps, value)))
                 (target.stmt || (target.stmt = db.prepareSync(log(mapParams(target.maps, [`DELETE FROM ${table}`]
                     .concat(target.wheres.length > 0 ? `WHERE ` + target.wheres.join(' AND ') : [])
                     .join(' '))))))
