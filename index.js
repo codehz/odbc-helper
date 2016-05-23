@@ -36,10 +36,11 @@ const DBMethods = (db, table) => ({
                     conf: {
                         foreign: {
                             target,
-                            key = src
+                            key = src,
+                            cascade = true
                         }
                     }
-                }) => `FOREIGN KEY(${src}) REFERENCES ${target}(${key}) ON DELETE CASCADE`)
+                }) => `FOREIGN KEY(${src}) REFERENCES ${target}(${key})${cascade ? " ON DELETE CASCADE" : ''}`)
             ]
             .join(', ');
         const self = new Proxy(fakeFunction({
