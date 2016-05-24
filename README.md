@@ -86,7 +86,8 @@ helper.debug = true;
 
 function log(...args) {
     console.log('\u001B[1;32m');
-    console.log(...args, '\u001B[0m');
+    console.log(...args);
+    console.log('\u001B[0m');
 }
 
 helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (db) {
@@ -152,7 +153,7 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
         log(await (await selectData()).data);
 
         log('delete');
-        const deleteCommand = new db.$test.delete().where('name = $name');
+        const deleteCommand = new db.$test.delete().where('name == $name');
         await deleteCommand({
             $name: 'TEST'
         });
@@ -175,7 +176,12 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
                 unique: true,
                 foreign: {
                     target: 'test',
-                    key: 'id'
+                    key: 'id',
+                    restrict: {
+                        ondelete: {
+                            cascade: true
+                        }
+                    }
                 }
             })
             .$info('TEXT', {
