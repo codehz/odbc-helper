@@ -1,6 +1,6 @@
 {
   "name": "odbc-helper",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "ODBC-helper like sqlite-helper",
   "main": "index.js",
   "scripts": {

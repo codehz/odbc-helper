@@ -20,6 +20,14 @@ const DBMethods = (db, table) => ({
         const PRIMARY = keys => keys ? [
             ['PRIMARY KEY', `(${keys.join(', ')})`].join(' ')
         ] : [];
+        const restricts = {
+            pad: '',
+            noaction: 'NO ACTION',
+            restrict: 'RESTRICT',
+            setnull: 'SET NULL',
+            setdefault: 'SET DEFAULT',
+            cascade: 'CASCADE'
+        };
         const generator = target => [
                 ...target.map(item => [
                         item.name,
@@ -37,10 +45,32 @@ const DBMethods = (db, table) => ({
                         foreign: {
                             target,
                             key = src,
-                            cascade = true
+                            restrict: {
+                                ondelete = {
+                                    noaction: true,
+                                    restrict: false,
+                                    setnull: false,
+                                    setdefault: false,
+                                    cascade: false
+                                },
+                                onupdate = {
+                                    noaction: true,
+                                    restrict: false,
+                                    setnull: false,
+                                    setdefault: false,
+                                    cascade: false
+                                }
+                            }
                         }
                     }
-                }) => `FOREIGN KEY(${src}) REFERENCES ${target}(${key})${cascade ? " ON DELETE CASCADE" : ''}`)
+                }) => [
+                        `FOREIGN KEY(${src})`,
+                        'REFERENCES',
+                        target,
+                        `(${key})`,
+                        ...(Object.keys(restricts).reduce((pre, key) => log(key, ondelete, ondelete[key] ? ['ON DELETE', restricts[key]] : pre), [])),
+                        ...(Object.keys(restricts).reduce((pre, key) => onupdate[key] ? ['ON UPDATE', restricts[key]] : pre, []))
+                    ].join(' '))
             ]
             .join(', ');
         const self = new Proxy(fakeFunction({
@@ -109,18 +139,21 @@ const DBMethods = (db, table) => ({
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property === '$' ? '*' : property.substr(1)), self) : property === 'limit' ?
                 (offset, rows) => (target.limit = {
-                    offset, rows
+                    offset,
+                    rows
                 }, self) : property === 'where' ?
                 cond => (target.wheres.push(cond), self) : property === 'order' ?
                 (by, asc = 'asc') => (target.orders.push({
-                    by, asc
+                    by,
+                    asc
                 }), self) : property === 'raw' ? ['SELECT',
                     target.keys.join(', '),
                     'FROM',
                     table,
                     ...(target.wheres.length > 0 ? ['WHERE', target.wheres.join(' AND ')] : []),
                     ...(target.orders.length > 0 ? ['ORDER BY', target.orders.map(({
-                        by, asc
+                        by,
+                        asc
                     }) => `${by} ${asc}`).join(', ')] : []),
                     ...(target.limit.offset ? ['LIMIT', `${target.limit.offset}, ${target.limit.rows}`] : [])
                 ].join(' ') : target[property],
@@ -143,6 +176,7 @@ const DBMethods = (db, table) => ({
                 cond => (target.wheres.push(cond), self) : property === 'raw' ? [
                     'UPDATE',
                     table,
+                    'SET',
                     generator(target.keys, target.maps),
                     ...(target.wheres.length > 0 ? ['WHERE', target.wheres.join(' AND ')] : [])
                 ].join(' ') : target[property],
