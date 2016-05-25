@@ -60,6 +60,9 @@ const DBMethods = (db, table) => ({
                                     setdefault: false,
                                     cascade: false
                                 }
+                            } = {
+                                ondelete: undefined,
+                                onupdate: undefined
                             }
                         }
                     }
@@ -243,7 +246,7 @@ const others = {
                         trigger_name.substr(1),
                         obj.insteadOf ? 'INSTEAD OF' : obj.after ? 'AFTER' : 'BEFORE',
                         obj.event,
-                        ...(obj.event === 'UPDATE' ? ['OF', ...(obj.updateOf ? [obj.updateOf.join(', ')] : [])] : []),
+                        ...(obj.event === 'UPDATE' && obj.updateOf ? ['OF', ...obj.updateOf.join(', ')] : []),
                         'ON',
                         obj.on,
                         'FOR EACH ROW BEGIN',
