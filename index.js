@@ -238,7 +238,8 @@ const others = {
                     ((obj.after = false), eventLogic(obj, self)) : property === 'after' ?
                     ((obj.after = true), eventLogic(obj, self)) : property === 'insteadOf' ?
                     ((obj.insteadOf = true), eventLogic(obj, self)) : property === 'on' ?
-                    (on => ((obj.on = on), self)) : property === 'when' ?
+                    (on => ((obj.on = on), self)) : property === 'updateOf' ?
+                    (updateOf => ((obj.updateOf = updateOf), self)) : property === 'when' ?
                     (when => ((obj.when = when), self)) : property === 'do' ?
                     ((op, args) => (obj.ops.push(args ? directMapParams(args, op.raw) : op.raw), self)) : property === 'raw' ? [
                         'CREATE TRIGGER IF NOT EXISTS',
