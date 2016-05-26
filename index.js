@@ -108,7 +108,7 @@ const DBMethods = (db, table) => ({
         }), {
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property.substr(1)), self) : property === 'raw' ? [
-                    target.replace ? 'REPLACE INTO' : target.ignore ? 'INSERT IGNORE INTO' : 'INSERT INTO',
+                    target.replace ? 'REPLACE INTO' : target.ignore ? 'INSERT OR IGNORE INTO' : 'INSERT INTO',
                     table,
                     `(${target.keys.join(', ')})`,
                     'VALUES',
