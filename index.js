@@ -69,8 +69,7 @@ const DBMethods = (db, table) => ({
                 }) => [
                         `FOREIGN KEY(${src})`,
                         'REFERENCES',
-                        target,
-                        `(${key})`,
+                        `${target}(${key})`,
                         ...(Object.keys(restricts).reduce((pre, key) => log(key, ondelete, ondelete[key] ? ['ON DELETE', restricts[key]] : pre), [])),
                         ...(Object.keys(restricts).reduce((pre, key) => onupdate[key] ? ['ON UPDATE', restricts[key]] : pre, []))
                     ].join(' '))

@@ -1,6 +1,6 @@
 # ODBC HELPER(WIP)
 
-A simple helper for odbc.
+A simple helper for odbc.(Warning: Very early versions, do not use in a production environment.)
 
 ## Basic Usage
 
