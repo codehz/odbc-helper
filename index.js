@@ -246,7 +246,7 @@ const others = {
                         trigger_name.substr(1),
                         obj.insteadOf ? 'INSTEAD OF' : obj.after ? 'AFTER' : 'BEFORE',
                         obj.event,
-                        ...(obj.event === 'UPDATE' && obj.updateOf ? ['OF', ...obj.updateOf.join(', ')] : []),
+                        ...(obj.event === 'UPDATE' && obj.updateOf ? ['OF', obj.updateOf.join(', ')] : []),
                         'ON',
                         obj.on,
                         'FOR EACH ROW BEGIN',
