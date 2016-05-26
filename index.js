@@ -113,7 +113,7 @@ const DBMethods = (db, table) => ({
                     `(${target.keys.join(', ')})`,
                     'VALUES',
                     `(${target.keys.map(key => '$' + key).join(', ')})`,
-                    ...(!target.replace && !target.ignore && target.deplicateUpdate ? ['ON DEPLICATE UPDATE'] : [])
+                    ...(!target.replace && !target.ignore && target.deplicateUpdate ? ['ON DEPLICATE KEY UPDATE'] : [])
                 ].join(' ') : property === 'replace' ?
                 ((target.replace = true), self) : property === 'deplicateUpdate' ?
                 ((target.deplicateUpdate = true), self) : property === 'ignore' ?
