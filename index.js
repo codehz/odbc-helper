@@ -47,14 +47,14 @@ const DBMethods = (db, table) => ({
                             key = src,
                             restrict: {
                                 ondelete = {
-                                    noaction: true,
+                                    noaction: false,
                                     restrict: false,
                                     setnull: false,
                                     setdefault: false,
                                     cascade: false
                                 },
                                 onupdate = {
-                                    noaction: true,
+                                    noaction: false,
                                     restrict: false,
                                     setnull: false,
                                     setdefault: false,
