@@ -72,7 +72,7 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
         log(await (await selectData()).data);
 
         log('delete');
-        const deleteCommand = new db.$test.delete().where('name == $name');
+        const deleteCommand = new db.$test.delete().query('name');
         await deleteCommand({
             $name: 'TEST'
         });
@@ -80,7 +80,7 @@ helper('DRIVER=SQLite3;Database=./test.db;FKSupport=True').then(async function (
         log(await (await selectData()).data);
 
         log('update');
-        const updateCommand = new db.$test.update().$info.where('name == $name');
+        const updateCommand = new db.$test.update().$info.query('name');
         await updateCommand({
             $name: 'TEST2',
             $info: 'modify'

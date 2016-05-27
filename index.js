@@ -144,7 +144,8 @@ const DBMethods = (db, table) => ({
                     offset,
                     rows
                 }, self) : property === 'where' ?
-                cond => (target.wheres.push(cond), self) : property === 'order' ?
+                cond => (target.wheres.push(cond), self) : property === 'query' ?
+                (query, queryas = query) => (target.wheres.push(`${query} = \$${queryas}`), self) : property === 'order' ?
                 (by, asc = 'asc') => (target.orders.push({
                     by,
                     asc
@@ -175,7 +176,8 @@ const DBMethods = (db, table) => ({
         }), {
             get: (target, property) => checkProperty(property) ?
                 (target.keys.push(property.substr(1)), self) : property === 'where' ?
-                cond => (target.wheres.push(cond), self) : property === 'raw' ? [
+                cond => (target.wheres.push(cond), self) : property === 'query' ?
+                (query, queryas = query) => (target.wheres.push(`${query} = \$${queryas}`), self) : property === 'raw' ? [
                     'UPDATE',
                     table,
                     'SET',
@@ -195,7 +197,8 @@ const DBMethods = (db, table) => ({
             maps: [],
         }), {
             get: (target, property) => property === 'where' ?
-                cond => (target.wheres.push(cond), self) : property === 'raw' ? [
+                cond => (target.wheres.push(cond), self) : property === 'query' ?
+                (query, queryas = query) => (target.wheres.push(`${query} = \$${queryas}`), self) : property === 'raw' ? [
                     'DELETE FROM',
                     table,
                     ...(target.wheres.length > 0 ? ['WHERE', target.wheres.join(' AND ')] : [])
